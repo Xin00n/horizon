@@ -1,0 +1,25 @@
+name: Build Windows Launcher
+
+on:
+  push:
+    branches:
+      - try/offline-launcher-win
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      RUSTFLAGS: -C target-feature=+crt-static
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build Launcher
+        working-directory: launcher
+        run: |
+          cargo build --release
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: horizon-launcher-windows-x64
+          path: launcher/target/release/horizon-launcher.exe
