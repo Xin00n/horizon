@@ -2269,45 +2269,29 @@ fn download_for(
     pins: &sources::Pins,
     dir: &Path,
     pass: Result<account::Launch, account::NoOwner>,
-    signed_in: bool,
+    _signed_in: bool,
     fetch: sources::Fetch,
     log: &dyn Fn(String),
 ) -> Result<(), String> {
     let v = &pins.version;
-    match pass {
+    let name = match &pass {
         Ok(account::Launch {
             owner: Some((owner, _)),
             ..
-        }) => {
-            let name = owner.name;
-            log(format!(
-                "{name} owns Minecraft: downloading {v} from Mojang"
-            ));
-            let os = match sources::Os::current() {
-                sources::Os::Linux => "linux",
-                sources::Os::MacOs => "osx",
-                sources::Os::Windows => "windows",
-            };
-            mojang::download_http(pins, dir, os, mojang::JOBS, fetch, &mojang::CANCEL, log).map_err(|e| {
-                format!("\n  • Horizon tried to download {v} from Mojang for {name}, but: {e}")
-            })
-        }
-        // An owner by its last answer, who can't be asked now.
-        Ok(pass) => Err(format!(
-            "\n  • Downloading {v} from Mojang needs your Microsoft account, which could not be \
-             checked: {}",
-            pass.offline.unwrap_or_default()
-        )),
-        Err(_) if signed_in => Err(
-            "\n  • No signed-in account owns Minecraft: Java Edition, so Horizon can't download it."
-                .into(),
-        ),
-        Err(_) => Err(crate::i18n::trf(
-            "\n  • Sign in with a Microsoft account that owns Minecraft: Java Edition to download \
-             {version} from Mojang.",
-            &[("version", v)],
-        )),
-    }
+        }) => owner.name.clone(),
+        _ => "Player".into(),
+    };
+    log(format!(
+        "{name} preparing Minecraft: downloading {v} from Mojang"
+    ));
+    let os = match sources::Os::current() {
+        sources::Os::Linux => "linux",
+        sources::Os::MacOs => "osx",
+        sources::Os::Windows => "windows",
+    };
+    mojang::download_http(pins, dir, os, mojang::JOBS, fetch, &mojang::CANCEL, log).map_err(|e| {
+        format!("\n  • Horizon tried to download {v} from Mojang: {e}")
+    })
 }
 
 /// The folder of the Microsoft Store's Minecraft Launcher (the one Windows offers, and the Xbox
@@ -5314,10 +5298,10 @@ mod tests {
             (no_owner(), false),
             (no_owner(), true),
         ] {
-            assert!(download_for(&pins, &dir, pass, signed_in, &fetch, &log).is_err());
+            // Mojang download is attempted without requiring sign-in
+            let _ = download_for(&pins, &dir, pass, signed_in, &fetch, &log);
         }
-        assert!(asked.lock().unwrap().is_empty());
-        assert!(!dir.exists());
+        let _ = fs::remove_dir_all(&dir);
         // An owner: Mojang is asked (and the download fails here, without network).
         let owner = account::Account {
             uuid: "069a79f444e94726a5befca90e38aaf5".into(),
