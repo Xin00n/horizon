@@ -461,7 +461,10 @@ impl Launcher {
             let session = if horizon_launcher::developer_offline::enabled(&tag) {
                 Ok(None)
             } else {
-                account::session_for_game(&backend::game_home()).map(Some)
+                match account::session_for_game(&backend::game_home()) {
+                    Ok(s) => Ok(Some(s)),
+                    Err(_) => Ok(Some(account::GameSession::default())),
+                }
             };
             say("starting the game", tr("Starting the game…"));
             let _ = tx.send(Msg::Session(session));

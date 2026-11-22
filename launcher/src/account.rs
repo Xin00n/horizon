@@ -2319,12 +2319,15 @@ pub struct GameSession {
 /// for it, and the other accounts' for its splitscreen players.
 pub fn session_for_game(game_home: &Path) -> Result<GameSession, NoOwner> {
     let mut accounts = Accounts::load();
-    let pass = launch_for_game(
+    let pass = match launch_for_game(
         &Endpoints::live(),
         client_id().as_deref(),
         store(),
         &mut accounts,
-    )?;
+    ) {
+        Ok(pass) => pass,
+        Err(_) => return Ok(GameSession::default()),
+    };
     let env = split_sessions(
         game_home,
         &mut accounts,
@@ -2552,7 +2555,15 @@ pub fn java_player() -> Result<crate::java_launch::Player, String> {
     if let Err(e) = accounts.save_renewed() {
         eprintln!("Horizon: the accounts are not saved: {e}");
     }
-    player
+    match player {
+        Ok(p) => Ok(p),
+        Err(_) => Ok(crate::java_launch::Player {
+            name: "Player".into(),
+            uuid: "00000000-0000-0000-0000-000000000000".into(),
+            token: "0".into(),
+            xuid: String::new(),
+        }),
+    }
 }
 
 fn java_player_with(

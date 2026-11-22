@@ -13,11 +13,6 @@ impl Launcher {
             let pass = match session {
                 Ok(pass) => pass,
                 Err(refused) => {
-                    // A keyring that didn't answer isn't a missing owner (#12179).
-                    if refused.keyring.is_none() {
-                        self.owner = Some(false);
-                        self.owner_screen_open = true;
-                    }
                     self.client_error = Some(refused.in_window());
                     self.starting_pack = None;
                     self.joining = None;

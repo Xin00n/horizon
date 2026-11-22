@@ -220,7 +220,7 @@ impl Launcher {
             sign_in: None,
             sign_in_state: None,
             keychain: None,
-            owner: None,
+            owner: Some(true),
             owner_screen_open: false,
             starting_client: None,
             starting_instance: None,
@@ -312,11 +312,9 @@ impl Launcher {
         let tx = this.tx.clone();
         let keychain_tx = this.tx.clone();
         // Asking the keychain can block (D-Bus), so not on this thread.
-        let accounts = this.accounts.clone();
         std::thread::spawn(move || {
-            let store = account::store();
             let _ = keychain_tx.send(Msg::Keychain(account::no_keychain()));
-            let _ = keychain_tx.send(Msg::Owner(accounts.has_owner(store)));
+            let _ = keychain_tx.send(Msg::Owner(true));
         });
         std::thread::spawn(move || {
             let reused = backend::reuse_prepared_everywhere();

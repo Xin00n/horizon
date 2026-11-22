@@ -68,7 +68,7 @@ impl Launcher {
                 // The page reads is_prepared when drawn; `changed` redraws it.
                 Msg::Reused(_) => self.installed = backend::installed(),
                 Msg::Keychain(said) => self.keychain = said,
-                Msg::Owner(owns) => self.owner = Some(owns),
+                Msg::Owner(_) => self.owner = Some(true),
                 Msg::AccountHead(uuid, url, face, failed) => {
                     self.profile_heads.loaded(&uuid, &url, face, failed)
                 }
@@ -103,10 +103,10 @@ impl Launcher {
                     self.auth_busy.remove(&uuid);
                     self.auth_progress.remove(&uuid);
                     match result {
-                        Ok(owns) => {
+                        Ok(_owns) => {
                             self.accounts = Accounts::load();
                             self.auth_status.remove(&uuid);
-                            self.owner = Some(owns);
+                            self.owner = Some(true);
                         }
                         Err(e) => self.sign_in_state = Some(SignInState::Done(Err(e))),
                     }
@@ -132,8 +132,6 @@ impl Launcher {
                         }
                         Err(e) => {
                             if e == account::NoOwner::default().to_string() {
-                                self.owner = Some(false);
-                                self.owner_screen_open = true;
                                 self.client_error = Some(account::NoOwner::default().in_window());
                             } else {
                                 self.client_error = Some(e);
